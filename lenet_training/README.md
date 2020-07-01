@@ -20,8 +20,17 @@ Useful links:
 06/30/2020:
 
 Add plot commands and training accuracy of batches in the training file as `train_v2.py`.
+**The plottings are stored in .pdf files in `checkpoint` folder.** Each time you run the code, the files in `checkpoint` will be overwritten. If you do not want this, you can modify the code to generate a new checkpoint folder in each run.
 
 Install the `matplotlib` package by `pip install matplotlib` to plot the loss, accuracy, etc.
 Matplotlib tutorial https://matplotlib.org/tutorials/introductory/pyplot.html
 
 See https://pytorch.org/docs/master/generated/torch.nn.Conv2d.html to configure the convolutional layers.
+
+---
+
+07/01/2020:
+
+- MNIST dataset https://pytorch.org/docs/stable/torchvision/datasets.html#mnist
+- CIFAR-10 dataset https://pytorch.org/docs/stable/torchvision/datasets.html#cifar
+- Example https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
