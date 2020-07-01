@@ -21,7 +21,7 @@ Useful links:
 
 Add plot commands and training accuracy of batches in the training file as `train_v2.py`.
 
-Install the `matplotlib` package by `conda install matplotlib` to plot the loss, accuracy, etc.
+Install the `matplotlib` package by `pip install matplotlib` to plot the loss, accuracy, etc.
 Matplotlib tutorial https://matplotlib.org/tutorials/introductory/pyplot.html
 
 See https://pytorch.org/docs/master/generated/torch.nn.Conv2d.html to configure the convolutional layers.
