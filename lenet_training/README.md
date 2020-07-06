@@ -38,6 +38,8 @@ See https://pytorch.org/docs/master/generated/torch.nn.Conv2d.html to configure 
 
 Example of dataloaders for CIFAR-10:
 ```python
+kwargs = {'num_workers': 12, 'worker_init_fn': np.random.seed(2020), 'pin_memory': True} if use_cuda else {}
+
 train_loader = torch.utils.data.DataLoader(
         datasets.CIFAR10('./data.cifar10', train=True, download=True,
             transform=transforms.Compose([
