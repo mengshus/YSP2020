@@ -34,3 +34,26 @@ See https://pytorch.org/docs/master/generated/torch.nn.Conv2d.html to configure 
 - MNIST dataset https://pytorch.org/docs/stable/torchvision/datasets.html#mnist
 - CIFAR-10 dataset https://pytorch.org/docs/stable/torchvision/datasets.html#cifar
 - Example https://pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
+- Concept of gradient descent and why use mini-batch https://machinelearningmastery.com/gentle-introduction-mini-batch-gradient-descent-configure-batch-size
+
+Example of dataloaders for CIFAR-10:
+```python
+train_loader = torch.utils.data.DataLoader(
+        datasets.CIFAR10('./data.cifar10', train=True, download=True,
+            transform=transforms.Compose([
+                           transforms.Pad(4),
+                           transforms.RandomCrop(32),
+                           transforms.RandomHorizontalFlip(),
+                           transforms.ToTensor(),
+                           transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+                        ])),
+        batch_size=args.batch_size, shuffle=True, **kwargs)
+ 
+test_loader = torch.utils.data.DataLoader(
+        datasets.CIFAR10('./data.cifar10', train=False, 
+            transform=transforms.Compose([
+                           transforms.ToTensor(),
+                           transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+                       ])),
+        batch_size=args.batch_size, shuffle=False, **kwargs)
+```
