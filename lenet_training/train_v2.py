@@ -85,14 +85,15 @@ def test():
     model.eval()
     total_correct = 0
     avg_loss = 0.0
-    for i, (input, target) in enumerate(data_test_loader):
-        if args.use_cuda:
-            input = input.cuda()
-            target = target.cuda()
-        output = model(input)
-        avg_loss += criterion(output, target).sum()
-        pred = output.detach().max(1)[1]
-        total_correct += pred.eq(target.view_as(pred)).sum()
+    with torch.no_grad():
+        for i, (input, target) in enumerate(data_test_loader):
+            if args.use_cuda:
+                input = input.cuda()
+                target = target.cuda()
+            output = model(input)
+            avg_loss += criterion(output, target).sum()
+            pred = output.max(1)[1]
+            total_correct += pred.eq(target.view_as(pred)).sum()
 
     avg_loss /= len(data_test)
     loss = avg_loss.detach().cpu().item()
