@@ -46,9 +46,11 @@ if args.arch == 'lenet':
     if args.dataset == 'mnist':
         model = lenet_mnist.LeNet5()
     elif args.dataset == 'cifar10':
+    	# need to specify
         model = None
 elif args.arch == 'resnet18':
     if args.dataset == 'mnist':
+    	# need to specify
         model = None
     elif args.dataset == 'cifar10':
         model = resnet_cifar.ResNet18()
@@ -87,7 +89,7 @@ if args.dataset == 'mnist':
     train_loader = torch.utils.data.DataLoader(data_train, batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(data_test, batch_size=args.test_batch_size, shuffle=False, **kwargs)
 
-elif args.dataset == 'cifar':
+elif args.dataset == 'cifar10':
     train_loader = torch.utils.data.DataLoader(
             datasets.CIFAR10('./data/cifar10', train=True, download=True,
                 transform=transforms.Compose([

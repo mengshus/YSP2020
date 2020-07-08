@@ -4,7 +4,12 @@ Activate the environment by **`conda activate py36`** and deactivate it by **`co
 The required packages `torch` and `torchvision` can be installed by `conda install --file requirements.txt`.
 To install additional packages, use `conda install <package_name>`.
 
-A sample running command for running python files is shown in `train.sh`. This can be run by **`bash train.sh`**.
+The following sample running command for running python files is shown in `train.sh`. This can be run by **`bash train.sh`**.
+```
+CUDA_VISIBLE_DEVICES=1 python train.py --epochs 20 --batch-size 256 --test-batch-size 1024 --lr 1e-2 --use-cuda
+```
+
+The model checkpoints will be stored in the `checkpoint` folder automatically. There are two checkpoint .pt file, one is from the last training epoch called `<dataset_name>_<network_name>.pt` (e.g., `mnist_lenet.pt`), and the other is the best model during the training process called `<dataset_name>_<network_name>_best.pt` (e.g., `mnist_lenet_best.pt`).
 
 We have 4 GPUs on the server with IDs 0, 1, 2, and 3. By adding `CUDA_VISIBLE_DEVICES=<gpu_id>`, we can designate a GPU to run the code. **Please use GPU with ID 1 or 3**, like `CUDA_VISIBLE_DEVICES=1 python train.py`.
 
