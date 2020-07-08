@@ -26,7 +26,7 @@ Configure the `.yaml` file in `profile` folder by setting the pruning ratio for 
 
 In the running command, specify the `.yaml` file by `--config-file`. For a file `lenet.yaml` stored in `profile` folder, just use `--config-file lenet`.
 
-Run the `misc.py` file to get a `.yaml` template that will be stored into `profile` folder. The file name is the network class name (e.g., `LeNet5`). The network structure also needs to be imported and the model needs to be specified, like in `pruning.py`.
+Run the `gen_yaml.py` file to get a `.yaml` template that will be stored into `profile` folder automatically. The file name will be the network class name (e.g., `LeNet5`). The network structure also needs to be imported and the model needs to be specified, like in `pruning.py`.
 The template looks like this:
 ```yaml
 prune_ratios:
@@ -59,7 +59,7 @@ Just leave the comment for the layer size as it is. It is printed for reference.
 
 All the convolutional layers and fully-connected layers are provided in the `.yaml` file to make it convenient to configure the pruning ratios.
 
-Usually we do not prune the first layer and the last layer.
+Usually we do not prune the first layer and the last layer. For a fully-connected layer, filter pruning would remove the rows of the 2-D weight matrix.
 
 # Save the Pruned Model
 
