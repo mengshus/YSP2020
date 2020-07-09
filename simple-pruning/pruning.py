@@ -14,6 +14,9 @@ import yaml
 from network import lenet_mnist, resnet_cifar
 from utils import *
 
+from custom_profile import profile_prune
+import copy
+
 import argparse
 from options import parser
 args = parser.parse_args()
@@ -46,11 +49,9 @@ if args.arch == 'lenet':
     if args.dataset == 'mnist':
         model = lenet_mnist.LeNet5()
     elif args.dataset == 'cifar10':
-    	# need to specify
         model = None
 elif args.arch == 'resnet18':
     if args.dataset == 'mnist':
-    	# need to specify
         model = None
     elif args.dataset == 'cifar10':
         model = resnet_cifar.ResNet18()
@@ -70,6 +71,7 @@ def get_load_path(args):
     return load_path
 
 
+model_cpu = copy.deepcopy(model)
 if use_cuda:
     model.cuda()
 
@@ -229,6 +231,14 @@ def main():
             print('Best Acc@1 {:.3f}%   Best epoch {}\n'.format(best_top1, best_epoch))
 
             top1_list.append(top1)
+
+            # print the current sparsity
+            num_channels = 1 if args.dataset == 'mnist' else 3
+            dummy_input = torch.randn(1, num_channels, 32, 32)
+            print('Current sparsity:')
+            flops, params, flops_prune, params_prune = profile_prune(model_cpu, inputs=(dummy_input, ), \
+    			prune=True, mode=0, file=save_path)
+            print('')
 
     os.rename(save_path.replace('.pt', '_best.pt'), \
         save_path.replace('.pt', '_epoch-{}_top1-{:.3f}.pt'.format(best_epoch, best_top1)))

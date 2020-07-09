@@ -8,6 +8,40 @@ This command runs using the `lenet` architecture and `mnist` dataset. The loadin
 
 Import the network before using. A WHOLE EXAMPLE IS PROVIDED AT LAST.
 
+# Update on 07/09/2020: observe the overall pruning ratio
+
+Run `calc_ops.py` to estimate the number of parameters and operations before performing pruning to help obtain a desired overall pruning ratio for the model. This provides the numbers before and after pruning for comparison. In this file, you need to specify the model, the number of channels in input (1 for MNIST and 3 for CIFAR-10), and the name of `.yaml` file (like `lenet`) stored in `profile` folder.
+
+The numbers will be shown in the following format:
+```sh
+layer name or total
+parameters remaining/total (overall compression ratio): 45943/81194 (1.77x)
+flops (operations) remaining/total (overall compression ratio): 125467/274656 (2.19x)
+```
+Here is a whole example:
+```sh
+conv1
+    params rmn/tot: 60/60    flops rmn/tot: 97200/97200
+
+conv2
+    params rmn/tot: 189/880    flops rmn/tot: 62654/292032
+
+fc1
+    params rmn/tot: 34680/69240    flops rmn/tot: 69240/138240
+
+fc2
+    params rmn/tot: 10164/10164    flops rmn/tot: 20160/20160
+
+fc3
+    params rmn/tot: 850/850    flops rmn/tot: 1680/1680
+
+total:
+    params rmn/tot: 45943/81194 (1.77x)    flops rmn/tot: 125467/274656 (2.19x)
+```
+The numbers are shown for each convolutional or fully-connected layer, and finally for the whole model.
+
+Code is also added in `pruning.py` to observe the current pruning ratio in training and needs no modification. Since we perform "hard" pruning each time, the pruning ratio for each layer does not change, but the places of pruned weight values may change.
+
 # Import the Network Structure
 
 - Put the network structure file `<filename>.py` into `network` folder.
