@@ -38,7 +38,7 @@ fc3
 total:
     params rmn/tot: 45943/81194 (1.77x)    flops rmn/tot: 125467/274656 (2.19x)
 ```
-The numbers are shown for each convolutional or fully-connected layer, and finally for the whole model.
+The numbers are shown for each convolutional or fully-connected layer, and finally for the whole model. We would like to increase the overall compression ratios of parameters and operations.
 
 Code is also added in `pruning.py` to observe the current pruning ratio in training and needs no modification. Since we perform "hard" pruning each time, the pruning ratio for each layer does not change, but the places of pruned weight values may change.
 
