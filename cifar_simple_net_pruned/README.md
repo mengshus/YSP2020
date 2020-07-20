@@ -1,4 +1,4 @@
----------- Filter Pruning ----------
+# Filter Pruning
 
 - Model: `custom_network.py`
 - Pretrained model: `cifar10_custom_83.12.pt`
@@ -9,3 +9,9 @@
 - How to load indices: `load_ind.py`
 
 Use `cifar10_custom_filter_epoch-100_top1-75.490_pruned.pt` and `cifar10_custom_filter_epoch-100_top1-75.490_ind.npz` in hardware implementation.
+
+Load network architecture:
+```python
+from custom_network import ConvNet
+model = ConvNet(in_channels=3)  # for CIFAR-10
+```
