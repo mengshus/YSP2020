@@ -7,15 +7,15 @@
 '''
 import os
 import torch
-from network import lenet_mnist, resnet_cifar
+from network import lenet, resnet, custom_network
 from custom_profile import profile_prune
 
-model = lenet_mnist.LeNet5()
-num_channels = 1
+model = custom_network.ConvNet(in_channels=3)  # CIFAR-10
+in_channels = 3
 # dummy_input is an input variable generated randomlly only for calculating the number of operations.
 # The first 1 means the batch size is 1. num_channels is 1 for mnist, and 3 for cifar. (32, 32) is the image size.
-dummy_input = torch.randn(1, num_channels, 32, 32)
-yaml_file = 'lenet'
+dummy_input = torch.randn(1, in_channels, 32, 32)
+yaml_file = 'ConvNet'
 
 flops, params, flops_prune, params_prune = profile_prune(model, inputs=(dummy_input, ), \
     prune=True, mode=1, file=os.path.join('profile', yaml_file + '.yaml'))

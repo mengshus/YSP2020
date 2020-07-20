@@ -206,7 +206,7 @@ def get_prune_cfg(cfg_file):
     return new_prune_cfg
 
 def profile_prune(model, inputs, double_macs=False, custom_ops=None, verbose=False, \
-    prune=True, mode=0, file=None, show_layer=True):
+    prune=True, mode=0, file=None, show_layer=True, print=print):
     '''
     mode = 0: file is path of pruned model (.pt, .pth, etc.)
     mode = 1: file is path of pruning configuration file (.yaml)

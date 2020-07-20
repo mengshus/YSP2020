@@ -8,6 +8,16 @@ This command runs using the `lenet` architecture and `mnist` dataset. The loadin
 
 Import the network before using. A WHOLE EXAMPLE IS PROVIDED AT LAST.
 
+# 07/20/2020
+
+Add `store_ind.py` to extract indices of unpruned filters of the model in filter pruning. Need to specify the path of pruned model.
+
+Add a customized CNN model with 3 CONV layers, 2 FC layers and 2 max pooling layers.
+
+The number of input channels in the model will be automatically set to 3 if choosing CIFAR-10 to train (default is 1 for MNIST).
+
+Add plotting code for testing loss and accuracy.
+
 # Update on 07/09/2020: observe the overall pruning ratio
 
 Run `calc_ops.py` to estimate the number of parameters and operations before performing pruning to help obtain a desired overall pruning ratio for the model. This provides the numbers before and after pruning for comparison. In this file, you need to specify the model, the number of channels in input (1 for MNIST and 3 for CIFAR-10), and the name of `.yaml` file (like `lenet`) stored in `profile` folder.

@@ -6,7 +6,7 @@ parser.add_argument('--load-path', default='',
                     help='pretrained model path')
 parser.add_argument('--arch', type=str, default='resnet18',
                     help='network architecture, support lenet5 and resnet18',
-                    choices=['lenet', 'resnet18'])
+                    choices=['lenet', 'resnet18', 'custom'])
 parser.add_argument('--dataset', default='cifar10',
                     help='support MNIST and CIFAR-10',
                     choices=['mnist', 'cifar10'])
@@ -27,8 +27,8 @@ parser.add_argument('--epoch-prune', type=int, default=10, metavar='N',
 parser.add_argument('--optmzr', type=str, default='adam', 
                     help='optimizer (default: adam), support SGD and Adam',
                     choices=['sgd', 'adam'])
-parser.add_argument('--lr', type=float, default=1e-2, metavar='LR',
-                    help='initial learning rate (default: 1e-2)')
+parser.add_argument('--lr', type=float, default=1e-3, metavar='LR',
+                    help='initial learning rate')
 parser.add_argument('--lr-scheduler', type=str, default='default',
                     help='lr scheduler, support step and cosine schedulers',
                     choices=['default', 'cosine'])

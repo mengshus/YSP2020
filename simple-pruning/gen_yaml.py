@@ -3,12 +3,11 @@
 	Need to import the network first.
 '''
 
-from network import lenet_mnist, resnet_cifar
-import yaml
 import os
+from network import lenet, resnet, custom_network
+import yaml
 
-model = lenet_mnist.LeNet5()
-# model = resnet_cifar.ResNet18()
+model = custom_network.ConvNet(in_channels=3)  # CIFAR-10
 
 
 def prune_config(model):

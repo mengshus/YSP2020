@@ -1,0 +1,11 @@
+prune_ratios:
+#   conv1.weight:  #[32, 3, 3, 3]
+#     0.
+   conv2.weight:  #[64, 32, 3, 3]
+     0.6
+   conv3.weight:  #[128, 64, 3, 3]
+     0.6
+#   fc1.weight:  #[512, 8192]
+#     0.
+#   fc2.weight:  #[10, 512]
+#     0.

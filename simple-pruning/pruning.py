@@ -11,7 +11,7 @@ from torchvision import datasets, transforms
 import numpy as np
 from numpy import linalg as LA
 import yaml
-from network import lenet_mnist, resnet_cifar
+from network import lenet, resnet, custom_network
 from utils import *
 
 from custom_profile import profile_prune
@@ -43,39 +43,6 @@ torch.backends.cudnn.benchmark = True  # will result in non-determinism
 
 args.dataset = args.dataset.lower()
 
-# set up model architecture
-args.arch = args.arch.lower()
-if args.arch == 'lenet':
-    if args.dataset == 'mnist':
-        model = lenet_mnist.LeNet5()
-    elif args.dataset == 'cifar10':
-        model = None
-elif args.arch == 'resnet18':
-    if args.dataset == 'mnist':
-        model = None
-    elif args.dataset == 'cifar10':
-        model = resnet_cifar.ResNet18()
-
-
-def get_load_path(args):
-    if args.arch == 'lenet':
-        if args.dataset == 'mnist':
-            load_path = 'checkpoint/pretrained/mnist_lenet_top1-98.840.pt'
-        elif args.dataset == 'cifar10':
-            load_path = ''
-    if args.arch == 'resnet18':
-        if args.dataset == 'mnist':
-            load_path = ''
-        elif args.dataset == 'cifar10':
-            load_path = 'checkpoint/pretrained/cifar10_resnet18_acc_94.140_sgd.pt.pt'
-    return load_path
-
-
-model_cpu = copy.deepcopy(model)
-if use_cuda:
-    model.cuda()
-
-
 kwargs = {'num_workers': 12, 'worker_init_fn': np.random.seed(2020), 'pin_memory': True} if use_cuda else {}
 
 ## data loader
@@ -90,6 +57,8 @@ if args.dataset == 'mnist':
                           transforms.ToTensor()]))
     train_loader = torch.utils.data.DataLoader(data_train, batch_size=args.batch_size, shuffle=True, **kwargs)
     test_loader = torch.utils.data.DataLoader(data_test, batch_size=args.test_batch_size, shuffle=False, **kwargs)
+
+    in_channels = 1
 
 elif args.dataset == 'cifar10':
     train_loader = torch.utils.data.DataLoader(
@@ -111,6 +80,21 @@ elif args.dataset == 'cifar10':
                            ])),
             batch_size=args.batch_size, shuffle=False, **kwargs)
 
+    in_channels = 3
+
+# set up model architecture
+args.arch = args.arch.lower()
+if args.arch == 'lenet':
+    model = lenet.LeNet5(in_channels)
+elif args.arch == 'resnet18':
+    model = resnet.ResNet18(in_channels)
+elif args.arch == 'custom':
+    model = custom_network.ConvNet(in_channels)
+
+model_cpu = copy.deepcopy(model)
+if use_cuda:
+    model.cuda()
+    
 
 def load_model(model, checkpoint, optimizer, first=False):
     # baseline model for pruning, pruned model for retrain
@@ -164,7 +148,8 @@ def main():
         load_model(model, checkpoint, optimizer, first=True)
 
     start_epoch = 1
-    top1_list = [0.]
+    loss_list = []
+    acc_list = [0.]
     best_epoch = 0
     if args.resume:
         start_epoch = checkpoint['epoch'] + 1
@@ -192,6 +177,7 @@ def main():
     save_path = os.path.join(args.ckpt_dir, '{}.pt'.format(ckpt_name))
 
     for epoch in range(start_epoch, args.epochs + 1):
+        print('')
         idx_loss_dict = train(train_loader, criterion, optimizer, scheduler, epoch, args)
 
         do_prune = (epoch - 1) % args.epoch_prune == 0 or epoch == args.epochs
@@ -199,9 +185,8 @@ def main():
             print('Before pruning:')
         _, top1 = test(model, criterion, test_loader)
 
-        # perform pruning
         if do_prune:
-            print('Perform pruning')
+            # perform pruning
             for (name, W) in model.named_parameters():
                 if name not in prune_cfg:  # ignore layers that are not pruned
                     continue
@@ -209,11 +194,10 @@ def main():
                 _, cuda_pruned_weights = mask(args, W, prune_cfg[name])  # get sparse model in cuda
                 W.data = cuda_pruned_weights  # replace the data field in variable
 
-        if do_prune:
             print('After pruning:')
-            _, top1 = test(model, criterion, test_loader)
+            loss, top1 = test(model, criterion, test_loader)
 
-            best_top1 = max(top1_list)
+            best_top1 = max(acc_list)
             is_best = top1 > best_top1
 
             save_checkpoint(
@@ -228,20 +212,46 @@ def main():
                 best_top1 = top1
                 best_epoch = epoch
 
-            print('Best Acc@1 {:.3f}%   Best epoch {}\n'.format(best_top1, best_epoch))
+            print('\nBest Acc@1 {:.3f}%   Best epoch {}\n'.format(best_top1, best_epoch))
 
-            top1_list.append(top1)
+            loss_list.append(loss)
+            acc_list.append(top1)
 
             # print the current sparsity
-            num_channels = 1 if args.dataset == 'mnist' else 3
-            dummy_input = torch.randn(1, num_channels, 32, 32)
+            in_channels = 1 if args.dataset == 'mnist' else 3
+            dummy_input = torch.randn(1, in_channels, 32, 32)
             print('Current sparsity:')
             flops, params, flops_prune, params_prune = profile_prune(model_cpu, inputs=(dummy_input, ), \
-    			prune=True, mode=0, file=save_path)
+                prune=True, mode=0, file=save_path, print=print)
             print('')
 
     os.rename(save_path.replace('.pt', '_best.pt'), \
         save_path.replace('.pt', '_epoch-{}_top1-{:.3f}.pt'.format(best_epoch, best_top1)))
+
+    import matplotlib.pyplot as plt
+    import matplotlib.ticker as mticker
+    epoch_list = list(range(1, args.epochs+1, args.epoch_prune)) + [args.epochs]
+
+    ## plot loss and accuracy
+    # https://matplotlib.org/gallery/api/two_scales.html
+    fig, ax1 = plt.subplots()
+
+    color = 'tab:red'
+    ax1.set_xlabel('epoch')
+    ax1.set_ylabel('test loss', color=color)
+    ax1.plot(epoch_list, loss_list, color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+
+    ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+
+    color = 'tab:blue'
+    ax2.set_ylabel('test acc', color=color)  # we already handled the x-label with ax1
+    ax2.plot(epoch_list, acc_list[1:], color=color)
+    ax2.tick_params(axis='y', labelcolor=color)
+
+    fig.tight_layout()  # otherwise the right y-label is slightly clipped
+    plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(args.epoch_prune))
+    plt.savefig(os.path.join(ckpt_dir, ckpt_name +'_results.pdf'))
 
 
 def train(train_loader, criterion, optimizer, scheduler, epoch, args):
@@ -341,7 +351,7 @@ def mask(args, weight_in, prune_ratio):
     weight = weight_in.cpu().detach().numpy()  # convert cpu tensor to numpy
     percent = prune_ratio * 100
 
-    if (args.sparsity_type == 'filter'):
+    if args.sparsity_type == 'filter':
         shape = weight.shape
         weight2d = weight.reshape(shape[0], -1)
         shape2d = weight2d.shape
@@ -354,7 +364,7 @@ def mask(args, weight_in, prune_ratio):
         above_threshold = above_threshold.astype(np.float32)
         return torch.from_numpy(above_threshold).cuda(), torch.from_numpy(weight).cuda()
 
-    elif (args.sparsity_type == 'channel'):
+    elif args.sparsity_type == 'channel':
         shape = weight.shape
         weight3d = weight.reshape(shape[0], shape[1], -1)
         channel_l2_norm = LA.norm(weight3d, 2, axis=(0,2))
@@ -365,7 +375,7 @@ def mask(args, weight_in, prune_ratio):
         above_threshold = above_threshold.astype(np.float32)
         return torch.from_numpy(above_threshold).cuda(), torch.from_numpy(weight).cuda()
     
-    elif (args.sparsity_type == 'column'):
+    elif args.sparsity_type == 'column':
         shape = weight.shape
         weight2d = weight.reshape(shape[0], -1)
         shape2d = weight2d.shape
