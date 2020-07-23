@@ -348,7 +348,8 @@ def mask(args, weight_in, prune_ratio):
          a pytorch tensor whose filter/channel/column that have lowest l2 norms (equivalent to absolute weight here) are set to zero
 
     '''
-    weight = weight_in.cpu().detach().numpy()  # convert cpu tensor to numpy
+    # torch gpu tensor -> torch cpu tensor -> numpy array
+    weight = weight_in.cpu().detach().numpy()
     percent = prune_ratio * 100
 
     if args.sparsity_type == 'filter':
@@ -385,7 +386,7 @@ def mask(args, weight_in, prune_ratio):
         above_threshold = column_l2_norm > percentile
         weight2d[:, under_threshold] = 0
         above_threshold = above_threshold.astype(np.float32)
-        return torch.from_numpy(expand_above_threshold).cuda(), torch.from_numpy(weight).cuda()
+        return torch.from_numpy(above_threshold).cuda(), torch.from_numpy(weight).cuda()
 
 
 if __name__ == '__main__':
