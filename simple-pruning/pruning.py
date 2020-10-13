@@ -124,8 +124,8 @@ def main():
 
     scheduler = None
     if args.lr_scheduler == 'default':
-        # each time after step_size epoch(s), new_lr = lr * gamma
-        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_step, gamma=args.lr_decay)
+        # each time after step_size batches, new_lr = lr * gamma
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=args.lr_step * len(train_loader), gamma=args.lr_decay)
     elif args.lr_scheduler == 'cosine':
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=args.epochs * len(train_loader), eta_min=4e-08)
     else:
@@ -251,7 +251,7 @@ def main():
 
     fig.tight_layout()  # otherwise the right y-label is slightly clipped
     plt.gca().xaxis.set_major_locator(mticker.MultipleLocator(args.epoch_prune))
-    plt.savefig(os.path.join(ckpt_dir, ckpt_name +'_results.pdf'))
+    plt.savefig(os.path.join(args.ckpt_dir, ckpt_name +'_results.pdf'))
 
 
 def train(train_loader, criterion, optimizer, scheduler, epoch, args):
