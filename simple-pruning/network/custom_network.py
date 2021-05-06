@@ -26,17 +26,11 @@ class ConvNet(nn.Module):
         x = self.conv3(x)  # 16x16 feature
         x = F.relu(x)
         x = F.max_pool2d(x, 2)  # 8x8 feature
-        x = x.view(-1, self.num_flat_features(x))
-        x = F.relu(self.fc1(x))
+        x = x.view(x.size(0), -1)  # flatten before FC
+        x = self.fc1(x)
+        x = F.relu(x)
         x = self.fc2(x)
         return x
-
-    def num_flat_features(self, x):
-        size = x.size()[1:]  # all dimensions except the batch dimension
-        num_features = 1
-        for s in size:
-            num_features *= s
-        return num_features
 
 
 def convnet(in_channels=1):

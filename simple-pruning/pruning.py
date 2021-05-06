@@ -39,6 +39,8 @@ global print
 print = logger.info
 
 use_cuda = not args.no_cuda and torch.cuda.is_available()
+device_name = 'cuda' if use_cuda else 'cpu'
+device = torch.device(device_name)
 torch.backends.cudnn.benchmark = True  # will result in non-determinism
 
 args.dataset = args.dataset.lower()
@@ -92,8 +94,7 @@ elif args.arch == 'custom':
     model = custom_network.ConvNet(in_channels)
 
 model_cpu = copy.deepcopy(model)
-if use_cuda:
-    model.cuda()
+model.to(device)
     
 
 def load_model(model, checkpoint, optimizer, first=False):
@@ -113,8 +114,7 @@ def main():
         print('\t{}: {}'.format(k, v))
 
     criterion = nn.CrossEntropyLoss()
-    if use_cuda:
-        criterion = criterion.cuda()
+    criterion = criterion.to(device)
 
     optimizer = None
     if args.optmzr == 'sgd':
@@ -143,9 +143,8 @@ def main():
     else:
         exit('Checkpoint does not exist.')
 
-    if use_cuda:
-        model.cuda()
-        load_model(model, checkpoint, optimizer, first=True)
+    model.to(device)
+    load_model(model, checkpoint, optimizer, first=True)
 
     start_epoch = 1
     loss_list = []
@@ -320,17 +319,18 @@ def test(model, criterion, test_loader):
     correct = 0
     total = len(test_loader.dataset)
     epoch_start_time = time.time()
-    with torch.no_grad():
-        for input, target in test_loader:
-            if use_cuda:
-                input, target = input.cuda(), target.cuda()
+    
+    for input, target in test_loader:
+        input = input.to(device)
+        target = target.to(device)
+        with torch.no_grad():
             output = model(input)
-            loss = criterion(output, target)
-            losses.update(loss.item(), input.size(0))
-            pred = output.max(1, keepdim=True)[1]  # get the index of the max log-probability
-            correct += pred.eq(target.view_as(pred)).sum().item()
+        loss = criterion(output, target)
+        losses.update(loss.item(), input.size(0))
+        pred = output.max(1, keepdim=True)[1]  # get the index of the max log-probability
+        correct += pred.eq(target.view_as(pred)).float().sum().item()
 
-    top1 = 100. * float(correct) / float(total)
+    top1 = 100. * correct / total
     print('Test Loss {:.4f}   Acc@1 {}/{} ({:.3f}%)   Time {}' \
         .format(losses.avg, correct, total, top1, int(time.time() - epoch_start_time)))
     return losses.avg, top1
@@ -363,7 +363,7 @@ def mask(args, weight_in, prune_ratio):
         weight2d[under_threshold, :] = 0
         weight = weight.reshape(shape)
         above_threshold = above_threshold.astype(np.float32)
-        return torch.from_numpy(above_threshold).cuda(), torch.from_numpy(weight).cuda()
+        return torch.from_numpy(above_threshold).to(device), torch.from_numpy(weight).to(device)
 
     elif args.sparsity_type == 'channel':
         shape = weight.shape
@@ -374,7 +374,7 @@ def mask(args, weight_in, prune_ratio):
         above_threshold = channel_l2_norm > percentile
         weight3d[:,under_threshold,:] = 0
         above_threshold = above_threshold.astype(np.float32)
-        return torch.from_numpy(above_threshold).cuda(), torch.from_numpy(weight).cuda()
+        return torch.from_numpy(above_threshold).to(device), torch.from_numpy(weight).to(device)
     
     elif args.sparsity_type == 'column':
         shape = weight.shape
@@ -386,7 +386,7 @@ def mask(args, weight_in, prune_ratio):
         above_threshold = column_l2_norm > percentile
         weight2d[:, under_threshold] = 0
         above_threshold = above_threshold.astype(np.float32)
-        return torch.from_numpy(above_threshold).cuda(), torch.from_numpy(weight).cuda()
+        return torch.from_numpy(above_threshold).to(device), torch.from_numpy(weight).to(device)
 
 
 if __name__ == '__main__':

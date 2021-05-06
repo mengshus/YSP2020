@@ -29,10 +29,15 @@ parser.add_argument('--lr', type=float, default=1e-3,
                     help='learning rate')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='use gpu device or not')
+parser.add_argument('--log-interval', type=int, default=10, metavar='N',
+                    help='print log for every N batches')
 args = parser.parse_args()
 
 use_cuda = not args.no_cuda and torch.cuda.is_available
+device_name = 'cuda' if use_cuda else 'cpu'
+device = torch.device(device_name)
 kwargs = {'num_workers': 12, 'worker_init_fn': np.random.seed(2020), 'pin_memory': True} if use_cuda else {}
+
 
 ## data loader
 if args.dataset == 'mnist':
@@ -81,60 +86,64 @@ if args.arch == 'lenet':
 else:
     model = ConvNet(in_channels=in_channels)
 
-if use_cuda:
-    model.cuda()
+model.to(device)
 criterion = nn.CrossEntropyLoss()
+criterion = criterion.to(device)
 optimizer = optim.Adam(model.parameters(), lr=args.lr)
 
 
 def train(epoch):
     model.train()
-    loss_list, batch_list = [], []
+    total = 0
+    loss_sum = 0.0
+    correct = 0
+
+    if epoch % 10 == 0:
+        for p in optimizer.param_groups:
+            p['lr'] *= 0.1
+
     for i, (input, target) in enumerate(train_loader):
-        if use_cuda:
-            input = input.cuda(non_blocking=True)
-            target = target.cuda(non_blocking=True)
+        input = input.to(device)
+        target = target.to(device)
 
         optimizer.zero_grad()
-
         output = model(input)
-
         loss = criterion(output, target)
-
-        loss_list.append(loss.detach().cpu().item())
-        batch_list.append(i+1)
-
-        pred = output.detach().max(1)[1]
-        total_correct = pred.eq(target.view_as(pred)).sum()
-        acc = float(total_correct) / args.batch_size * 100
-
-        if i % 10 == 0:
-            print2log('Train - Epoch {}, Batch {}, Loss {:f}, Accuracy {:.3f}' \
-                .format(epoch, i, loss.detach().cpu().item(), acc))
-
         loss.backward()
         optimizer.step()
+
+        total += input.size(0)
+        loss_sum += loss.float().sum()
+        loss_avg = loss_sum / total
+
+        pred = output.detach().max(1)[1]
+        correct += pred.eq(target.view_as(pred)).float().sum()
+        acc = correct / total * 100
+
+        if i % args.log_interval == 0:
+            print2log('Train - Epoch {}, Batch {}, Loss {:f}, Accuracy {:.3f}' \
+                .format(epoch, i, loss_avg, acc))
 
 
 def test():
     model.eval()
-    total_correct = 0
-    avg_loss = 0.0
-    with torch.no_grad():
-        for i, (input, target) in enumerate(test_loader):
-            if use_cuda:
-                input = input.cuda()
-                target = target.cuda()
+    loss_sum = 0.0
+    correct = 0
+       
+    for i, (input, target) in enumerate(test_loader):
+        input = input.to(device)
+        target = target.to(device)
+        with torch.no_grad():
             output = model(input)
-            avg_loss += criterion(output, target).float().sum()/input.size(0)
-            pred = output.max(1)[1]
-            total_correct += pred.eq(target.view_as(pred)).float().sum()/input.size(0)
+        loss = criterion(output, target)
+        loss_sum += loss.float().float().sum()
+        pred = output.max(1)[1]
+        correct += pred.eq(target.view_as(pred)).float().sum()
 
-    avg_loss /= len(test_loader)
-    loss = avg_loss.detach().cpu().item()
-    acc = float(total_correct) / len(test_loader) * 100
-    print2log('Test Avg. Loss {:f}, Accuracy {:.3f}%\n'.format(loss, acc))
-    return loss, acc
+    loss_avg = loss_sum / len(test_loader.dataset)
+    acc = correct / len(test_loader.dataset) * 100
+    print2log('Test Avg. Loss {:f}, Accuracy {:.3f}%\n'.format(loss_avg, acc))
+    return loss_avg, acc
 
 
 def main():
